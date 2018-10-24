@@ -1,0 +1,14 @@
+* Form to fix badly working for Poland FM 'SPELL_AMOUNT'
+* Pass spell-word as a parameter and the result should be better.
+* I'm going to update the form with every new case I'll encounter.
+* Paweł Banach
+* Created: 24.10.2018
+
+form spell_amount_process changing p_word.
+  replace 'TIJSJATSCHI' with 'TYSIĄCE' into p_word.
+  replace 'TYS' with ' TYS' into p_word.
+  replace 'SET' with 'SET ' into p_word.
+  replace 'STA' with 'STA ' into p_word.
+  replace 'STO' with 'STO ' into p_word.
+  replace 'DWIEŚCIE' with 'DWIEŚCIE ' into p_word.
+endform.
