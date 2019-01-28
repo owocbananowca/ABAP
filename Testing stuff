@@ -1,0 +1,709 @@
+*&--------------------------------------------------------------------*
+*& Report  ZSZK_ABAP_100
+*&---------------------------------------------------------------------*
+*& Raport testowy
+*& Some parts won't work unless appropiate screens and modules created.
+*&---------------------------------------------------------------------*
+REPORT zszk_abap_100.
+
+**********************************************************************
+data:
+    desc_table    type ref to cl_abap_tabledescr,
+    desc_struc    type ref to cl_abap_structdescr.
+
+  field-symbols:
+    <p_component> type abap_compdescr.
+
+ data: it_data TYPE TABLE OF mara.
+
+  desc_table ?= cl_abap_tabledescr=>describe_by_data( it_data ).
+  desc_struc ?= desc_table->get_table_line_type( ).
+
+  loop at desc_struc->components assigning <p_component>.
+    WRITE: / <p_component>-name.
+  endloop.
+
+
+
+********************************************************************** Potwierdzenie wyjścia
+********************************************************************** + numc/char wyświetlanie
+*TYPES: BEGIN OF test_type,
+*        char(10),
+*        numc(10) TYPE n,
+*      END OF test_type.
+*DATA: lt_test TYPE TABLE OF test_type,
+*      ls_test TYPE test_type.
+*
+*DATA: alv TYPE REF TO cl_salv_table.
+*
+*DATA: answer.
+*
+*START-OF-SELECTION.
+*  ls_test-char = '123'.
+*  ls_test-numc = 'asd123xd'.
+*  APPEND ls_test TO lt_test.
+*
+*  cl_salv_table=>factory(
+**    EXPORTING
+**      list_display   = IF_SALV_C_BOOL_SAP=>FALSE    " ALV Displayed in List Mode
+**      r_container    =     " Abstract Container for GUI Controls
+**      container_name =
+*    IMPORTING
+*      r_salv_table   = alv    " Basis Class Simple ALV Tables
+*    CHANGING
+*      t_table        = lt_test
+*  ).
+*  WHILE answer <> '1'.
+*  alv->display( ).
+*  CALL FUNCTION 'POPUP_TO_CONFIRM'
+*    EXPORTING
+*      text_question               = 'Czy chcesz wyjść?'
+*   IMPORTING
+*     ANSWER                      = answer
+*            .
+*  ENDWHILE.
+********************************************************************** Rekurencja
+*FORM rekurencja CHANGING p_v1 TYPE i
+*                         p_v2 TYPE i
+*                         p_id TYPE i.
+*  DATA: lv_int TYPE i.
+*
+*  WRITE: / p_v2, p_v1.
+*
+*  try.
+*  p_id = p_id - 1.
+*  lv_int = p_v1.
+*  p_v1 = lv_int + p_v2.
+*  p_v2 = lv_int.
+*  CATCH CX_SY_ARITHMETIC_OVERFLOW.
+*    WRITE: / 'Zepsuło się, pozostało iteracji:', p_id.
+*    EXIT.
+*  ENDTRY.
+*
+*  IF p_id > 0.
+*    PERFORM rekurencja CHANGING p_v1 p_v2 p_id.
+*  ENDIF.
+*ENDFORM.
+*
+*FORM rekurencja_wyw CHANGING p_v1 TYPE i
+*                             p_id TYPE i.
+*  DATA: lv_prev TYPE i VALUE 0.
+*
+*  PERFORM rekurencja CHANGING p_v1 lv_prev p_id.
+*
+*  WRITE: / lv_prev, p_v1.
+*ENDFORM.
+*
+*DATA: gv_wynik TYPE i,
+*      gv_numer TYPE i.
+*
+*START-OF-SELECTION.
+*gv_numer = 100.
+*gv_wynik = 1.
+*PERFORM rekurencja_wyw CHANGING gv_wynik gv_numer.
+********************************************************************** Kombinacje do artykuły FS
+*FIELD-SYMBOLS: <fs>.
+*DATA: gv_zmienna.
+*
+*ASSIGN ('gv_zmienna') TO <fs>.
+*
+********************************************************************** konwerter z % na najmniejszy ułamek
+*PARAMETERS: p_proc TYPE string.
+*DATA: gv_proc(100),
+*      gv_licz TYPE f,
+*      gv_mian TYPE f,
+*      gv_temp TYPE f,
+*      gv_1 TYPE i,
+*      gv_2 TYPE i,
+*      gv_s1(3),
+*      gv_s2(3).
+*
+*REPLACE '%' IN p_proc WITH ' '.
+*gv_licz = p_proc.
+*gv_mian = 100.
+*
+*IF gv_licz <> gv_mian.
+*  DO.
+*    CALL FUNCTION 'GCD'
+*      EXPORTING
+*        i_numerator   = gv_licz
+*        i_denominator = gv_mian
+*      IMPORTING
+*        e_gcd         = gv_temp.
+*    IF gv_temp > 1.
+*      gv_licz = gv_licz / gv_temp.
+*      gv_mian = gv_mian / gv_temp.
+*    ELSE.
+*      EXIT.
+*    ENDIF.
+*  ENDDO.
+*  gv_1 = gv_licz.
+*  gv_2 = gv_mian.
+*  WRITE: gv_1 TO gv_s1, gv_2 TO gv_s2.
+*  CONCATENATE gv_s1 gv_s2 INTO gv_proc SEPARATED BY '/'.
+*ELSE.
+*  gv_proc = '1'.
+*ENDIF.
+*
+*CONDENSE gv_proc NO-GAPS.
+*WRITE: gv_proc.
+**********************************************************************
+*CALL TRANSACTION 'ZPB_ZGADYWANKA'.
+**********************************************************************
+*DATA: gv_int LIKE bbseg-wrbtr.
+*
+*DO 100 TIMES.
+*  CALL FUNCTION 'RANDOM_AMOUNT'
+*    EXPORTING
+*      rnd_min    = '1'
+*      rnd_max    = '100'
+*    IMPORTING
+*      rnd_amount = gv_int
+*    EXCEPTIONS
+*      OTHERS     = 1.
+*
+*  WRITE: / gv_int.
+*ENDDO.
+********************************************************************** konwert liczby do stringa z pominięciem zbędnych zer
+*DATA: gv_string(20) VALUE '8.00',
+*      gv_string_2(20) VALUE '8.00'.
+*
+*DATA: t1 TYPE i,
+*      t2 TYPE i,
+*      t3 TYPE i.
+*
+*      GET RUN TIME FIELD t1.
+*      PERFORM convert_1 CHANGING gv_string.
+*      GET RUN TIME FIELD t2.
+*      t3 = ( t2 - t1 ).
+*      WRITE: / t3.
+*
+*      GET RUN TIME FIELD t1.
+*      PERFORM convert_2 CHANGING gv_string_2.
+*      GET RUN TIME FIELD t2.
+*      t3 = ( t2 - t1 ).
+*      WRITE: / t3.
+*
+*FORM convert_1 CHANGING gv_string TYPE c.
+*      DATA: gv_temp, gv_t TYPE p DECIMALS 2.
+*      gv_t = gv_string.
+*      gv_t = gv_t mod 1.
+*      IF gv_t <> 0.
+*        SHIFT gv_string RIGHT DELETING TRAILING '0'.
+*      ELSE.
+*        SPLIT gv_string AT '.' INTO gv_string gv_temp.
+*      ENDIF.
+*      CONDENSE gv_string.
+**      WRITE gv_string.
+*ENDFORM.
+*
+*FORM convert_2 CHANGING gv_string TYPE c.
+*  REPLACE '.00' WITH space INTO gv_string.
+*  SHIFT gv_string RIGHT DELETING TRAILING '0'.
+*ENDFORM.
+********************************************************************** huh najs
+*DATA: gt_mara TYPE TABLE OF spfli,
+*      gt_t LIKE gt_mara,
+*      gv_cursor TYPE cursor,
+*      gt_cursors TYPE TABLE OF cursor.
+*
+*OPEN CURSOR gv_cursor FOR SELECT * FROM spfli.
+*
+*DO 3 TIMES.
+*  FETCH NEXT CURSOR gv_cursor INTO TABLE gt_mara PACKAGE SIZE 5.
+*  APPEND LINES OF gt_mara TO gt_t.
+**  BREAK-POINT.
+*ENDDO.
+********************************************************************** RFC Jakuba
+*DATA: output1 type c LENGTH 60.
+*PARAMETERS: param1 TYPE c LENGTH 60.
+*
+*CALL FUNCTION 'ZSZKJK_POWITANIE' "nazwa modułu funkcyjnego
+*DESTINATION 'ZSZKJK_QED' "nazwa połączenia utworzonego w punkcie 2
+*EXPORTING
+*  name = param1
+*IMPORTING
+*  result = output1.
+*
+*WRITE: output1.
+********************************************************************** PRovide test
+**** https://help.sap.com/doc/abapdocu_731_index_htm/7.31/en-US/abapprovide.htm
+*DATA: BEGIN OF wa1,
+*        col1 TYPE i,
+*        col2 TYPE i,
+*        col3 TYPE string,
+*      END OF wa1.
+*
+*DATA: BEGIN OF wa2,
+*        col1 TYPE i,
+*        col2 TYPE i,
+*        col3 TYPE string,
+*      END OF wa2.
+*
+*DATA: itab1 LIKE STANDARD TABLE OF wa1,
+*      itab2 LIKE STANDARD TABLE OF wa2.
+*
+*DATA: flag1(1) TYPE c,
+*      flag2(1) TYPE c.
+*
+*wa1-col1 = 1.
+*wa1-col2 = 6.
+*wa1-col3 = 'Itab1 Int1'.
+*APPEND wa1 TO itab1.
+*
+*wa1-col1 = 9.
+*wa1-col2 = 12.
+*wa1-col3 = 'Itab1 Int2'.
+*APPEND wa1 TO itab1.
+*
+*wa2-col1 = 4.
+*wa2-col2 = 11.
+*wa2-col3 = 'Itab2 Int1'.
+*APPEND wa2 TO itab2.
+*
+*WRITE: 'itab1'.
+*LOOP AT itab1 INTO wa1.
+*  WRITE: / wa1-col1, wa1-col2, wa1-col3.
+*ENDLOOP.
+*ULINE.
+*WRITE: 'itab2'.
+*LOOP AT itab2 INTO wa1.
+*  WRITE: / wa1-col1, wa1-col2, wa1-col3.
+*ENDLOOP.
+*ULINE.
+*CLEAR: wa1, wa2.
+*WRITE 'provide'.
+*
+*PROVIDE FIELDS col3 FROM itab1 INTO wa1
+*                               VALID flag1
+*                               BOUNDS col1 AND col2
+*        FIELDS col3 FROM itab2 INTO wa2
+*                               VALID flag2
+*                               BOUNDS col1 AND col2
+*        BETWEEN 2 AND 14.
+*
+*  IF flag1 = 'X' and flag2 = 'X'.
+*    WRITE:/ wa1-col1, wa2-col2, wa1-col3, wa2-col3.
+*    ULINE.
+*  ENDIF.
+*ENDPROVIDE.
+**PROVIDE FIELDS col3 FROM itab1 INTO wa1
+**                               VALID flag1
+**                               BOUNDS col1 AND col2
+**        FIELDS col3 FROM itab2 INTO wa2
+**                               VALID flag2
+**                               BOUNDS col1 AND col2
+**        BETWEEN 2 AND 14.
+**  WRITE: / wa1-col1, wa1-col2, wa1-col3, flag1.
+**  WRITE: / wa2-col1, wa2-col2, wa2-col3, flag2.
+**  SKIP.
+**ENDPROVIDE.
+
+********************************************************************** dynamic tab struct
+** http://www.erpworkbench.com/abap/dynamic/dynamic-structure.htm
+
+***** Przykład od Kingi, właściwie inna klasa przyjmująca inną listę pól
+*****lo_tab_desc = cl_abap_structdescr=>create( lt_fieldlist ).
+*****      create data pr_data type handle lo_tab_desc.
+*
+*TYPES: BEGIN OF gty_type,
+*        nr TYPE i,
+*        opis(20),
+*       END OF gty_type.
+*
+*"Baza
+*DATA: gt_input TYPE TABLE OF gty_type,
+*      gs_input TYPE gty_type. " <- na podstawie tego
+*"Output - zmieniona baza
+*DATA: gt_tab TYPE REF TO data,    " Nowa tabela
+*      gs_tab TYPE REF TO data,
+*      wa_fieldcat TYPE lvc_s_fcat," obszar dla it_fcat
+*      it_fieldcat TYPE lvc_t_fcat." fcat zawierający listę pól, tutaj dodajemy nowe aby pojawiły się w naszej tabeli
+*"Pobranie pól bazy aby uzupełnić nimi fcat
+*DATA: it_tabdescr TYPE abap_compdescr_tab,              " Lista pól
+*      wa_tabdescr TYPE abap_compdescr.
+*DATA: ref_table_descr TYPE REF TO cl_abap_structdescr.  "Pobieranie
+*DATA: ref_type_descr TYPE REF TO cl_abap_typedescr.
+*
+*FIELD-SYMBOLS: <fs_tab>,
+*               <fs_wa>.
+*
+*ref_table_descr ?= cl_abap_typedescr=>describe_by_data( gs_input ).
+*it_tabdescr[] = ref_table_descr->components[].
+*LOOP AT it_tabdescr INTO wa_tabdescr.
+*  CLEAR wa_fieldcat.
+*  wa_fieldcat-fieldname = wa_tabdescr-name .
+*  wa_fieldcat-datatype  = wa_tabdescr-type_kind.
+*  wa_fieldcat-inttype   = wa_tabdescr-type_kind.
+*  wa_fieldcat-intlen    = wa_tabdescr-length.
+*  wa_fieldcat-decimals  = wa_tabdescr-decimals.
+*  APPEND wa_fieldcat TO it_fieldcat.
+*ENDLOOP.
+*
+*"start własne pola - można używając odp klasy zwrócić sobie podane niżej wartości typy, długość i dec
+*wa_fieldcat-fieldname = 'C4'.
+*wa_fieldcat-datatype  = 'C'.
+*wa_fieldcat-inttype   = 'C'.
+*wa_fieldcat-intlen    = 4.
+*wa_fieldcat-decimals  = 0.
+*APPEND wa_fieldcat TO it_fieldcat.
+*"koniec własne pola
+*
+*CALL METHOD cl_alv_table_create=>create_dynamic_table(
+*  EXPORTING
+*    it_fieldcatalog = it_fieldcat
+*  IMPORTING
+*    ep_table        = gt_tab ).
+*
+*ASSIGN gt_tab->* TO <fs_tab>.
+*
+*ref_type_descr ?= cl_abap_structdescr=>describe_by_data( <fs_tab> ).
+*
+*CREATE DATA gs_tab TYPE (ref_type_descr->absolute_name).
+*ASSIGN gs_tab->* TO <fs_wa>.
+*
+*BREAK-POINT. "<fs_tab> to nasza tabela a <fs_wa> to jej obszar roboczy
+
+**********************************************************************
+*DATA: c1 VALUE '1', c2 VALUE '2', c3(2).
+*c3 = c1 && c2.
+*WRITE c3.
+
+********************************************************************** Nazwy i typy pól :)
+*PARAMETERS: gv_name TYPE string.
+*
+*DATA: gs_struc TYPE REF TO data,
+*      descr_ref TYPE ref to cl_abap_typedescr,
+*      descr_str TYPE REF TO cl_abap_structdescr,
+*      descr_str_2 TYPE REF TO cl_abap_structdescr,
+*
+*      lo_elem_descr     TYPE REF TO cl_abap_elemdescr,
+*
+*      lt_struct_fields  TYPE cl_abap_structdescr=>component_table,
+*      lt_struct_fields_2  TYPE cl_abap_structdescr=>component_table.
+*
+*FIELD-SYMBOLS: <fs_struc>,
+*               <fs_comp>,
+*               <fs_comp2> LIKE LINE OF lt_struct_fields,
+*               <fs_comp3> LIKE LINE OF lt_struct_fields.
+*
+*TRY.
+*  CREATE DATA gs_struc TYPE (gv_name).
+*CATCH cx_root.
+*  MESSAGE 'Zła nazwa' TYPE 'E' DISPLAY LIKE 'A'.
+*ENDTRY.
+*
+*ASSIGN gs_struc->* TO <fs_struc>.
+*
+*"Nazwy pól
+*descr_str ?= cl_abap_structdescr=>describe_by_data( <fs_struc> ).
+*lt_struct_fields = descr_str->get_components( ).
+*
+*LOOP AT lt_struct_fields ASSIGNING <fs_comp2>.
+*  WRITE: / <fs_comp2>-name.
+*ENDLOOP.
+**
+*" Typy pól
+*DO.
+*  ASSIGN COMPONENT sy-index OF STRUCTURE <fs_struc> TO <fs_comp>.
+*  IF sy-subrc = 0.
+*    descr_ref = cl_abap_typedescr=>describe_by_data( <fs_comp> ).
+*    WRITE: / descr_ref->absolute_name, descr_ref->kind, descr_ref->type_kind.
+*    WRITE: / descr_ref->absolute_name+6.
+*  ELSE.
+*    EXIT.
+*  ENDIF.
+*ENDDO.
+
+**********************************************************************
+*PARAMETERS: gv_tab TYPE string,
+*            p_alv RADIOBUTTON GROUP g1,
+*            p_list RADIOBUTTON GROUP g1.
+*
+*DATA: gt_tab TYPE REF TO data,
+*      gr_alv TYPE REF TO cl_salv_table.
+*
+*FIELD-SYMBOLS: <fs_tab> TYPE ANY TABLE,
+*               <fs_wa>,
+*               <fs_comp> TYPE any.
+*
+*TRY.
+*    CREATE DATA gt_tab TYPE TABLE OF (gv_tab).
+*  CATCH cx_sy_create_data_error.
+*    MESSAGE 'Nie znaleziono takiej tabeli jak' TYPE 'E' DISPLAY LIKE 'A'.
+*  CATCH cx_root.
+*    MESSAGE 'Coś poszło nie tak' TYPE 'E' DISPLAY LIKE 'A'.
+*ENDTRY.
+*
+*ASSIGN gt_tab->* TO <fs_tab>.
+*IF sy-subrc = 0.
+*  SELECT * FROM (gv_tab) INTO TABLE <fs_tab>.
+*  IF p_list = 'X'.
+*    PERFORM list.
+*  ELSEIF p_alv = 'X'.
+*    PERFORM alv.
+*  ENDIF.
+*ENDIF.
+*
+*FORM alv.
+*  cl_salv_table=>factory(
+*    IMPORTING
+*      r_salv_table   = gr_alv
+*    CHANGING
+*      t_table        = <fs_tab>
+*  ).
+*  gr_alv->display( ).
+*ENDFORM.                    "alv
+*
+*FORM list.
+*  LOOP AT <fs_tab> ASSIGNING <fs_wa>.
+*    DO.
+*      ASSIGN COMPONENT sy-index OF STRUCTURE <fs_wa> TO <fs_comp>.
+*      IF sy-subrc = 0.
+*        WRITE: <fs_comp>.
+*      ELSE.
+*        EXIT.
+*      ENDIF.
+*    ENDDO.
+*    NEW-LINE.
+*  ENDLOOP.
+*ENDFORM.                    "list
+********************************************************************** Moduł ze szkolenia smartforms
+*DATA: lf_formname TYPE tdsfname VALUE 'ZSZK_SMART_FROM'.
+*DATA: lf_fm_name TYPE rs38l_fnam.
+*DATA: gt_dane TYPE zszk_struc.
+*
+*gt_dane-text1 = 'Nagłówek linia 1'.
+*gt_dane-text2 = 'Nagłówek linia 2'.
+*gt_dane-text3 = 'Sam dół :)'.
+*
+*CALL FUNCTION 'SSF_FUNCTION_MODULE_NAME'
+*  EXPORTING
+*    formname = lf_formname
+*  IMPORTING
+*    fm_name  = lf_fm_name.
+*
+*CALL FUNCTION lf_fm_name
+*  EXPORTING
+*    DANE = gt_dane.
+
+**********************************************************************
+*DATA: gv_c(5),
+*      gv_pernr TYPE pernr-pernr,
+*      gv_p TYPE p.
+*gv_c = '01234'.
+**gv_p = '123'.
+**
+**UNPACK gv_p TO gv_c.
+**UNPACK gv_p TO gv_pernr.
+*
+*PACK gv_c TO gv_p.
+*PACK gv_c TO gv_pernr.
+*
+*WRITE: / gv_p, gv_c, gv_pernr.
+********************************************************************** hide
+*DATA: square TYPE i,
+*      cube   TYPE i.
+*
+*START-OF-SELECTION.
+*  FORMAT HOTSPOT.
+*  DO 10 TIMES.
+*    square = sy-index ** 2.
+*    cube   = sy-index ** 3.
+*    WRITE / sy-index.
+*    HIDE: square, cube.
+*  ENDDO.
+*
+*AT LINE-SELECTION.
+*  WRITE: square, cube.
+********************************************************************** Elementy tekstowe
+*PARAMETERS: p_int TYPE i,
+*            p_date LIKE sy-datum.
+
+********************************************************************** drag 'n drop test 0o
+*perform test_form.
+*
+*FORM test_form.
+*
+*ENDFORM.
+*********************************************************************** at new, at end, at first, at last.
+*DATA: spfli TYPE TABLE OF spfli,
+*      wa LIKE LINE OF spfli.
+*
+*data LV_COMMA type C.
+*
+*select * from spfli into table spfli up to 1000 rows.
+*
+*SORT spfli BY carrid connid.
+*
+*loop at spfli into wa." WHERE carrid <> 'AA'.
+*  at FIRST.
+*    WRITE: / 'Spis połączeń i ich lotów'.
+*  ENdat.
+*
+*  at new carrid.
+*    WRITE: / 'Połączenia dla ', wa-carrid , ' ('.
+*  ENDAT.
+*
+*  write: LV_COMMA, wa-connid.
+*  LV_COMMA = ','.
+*
+*  at END OF carrid.
+*    WRITE: ').'.
+*    clear lv_comma.
+*  ENDAT.
+*
+*  at last.
+*    WRITE: / 'Koniec spisu'.
+*  ENDAT.
+*endloop.
+********************************************************************** search help LUB text table
+* zpb_cont_test i zpb_cont
+*PARAMETERS: p_num TYPE zpb_cont_test-numer.
+*
+*AT SELECTION-SCREEN ON HELP-REQUEST FOR p_num.
+*  BREAK-POINT.
+*
+*END-OF-SELECTION.
+*
+*  WRITE: p_num.
+
+
+********************************************************************** opis dla pola
+*DATA: temp(20).
+*DATA dyfields LIKE dynpread OCCURS 1 WITH HEADER LINE.
+*
+*SELECTION-SCREEN BEGIN OF LINE.
+*PARAMETERS p_plans LIKE p0001-plans.
+*SELECTION-SCREEN COMMENT 15(30) lv_str FOR FIELD p_plans.
+*SELECTION-SCREEN END OF LINE.
+*
+*INITIALIZATION.
+*  lv_str = 'Init val'.
+*
+*AT SELECTION-SCREEN ON p_plans.
+**  CLEAR: dyfields, dyfields[].
+*  SELECT SINGLE stext FROM hrp1000 INTO temp WHERE objid = p_plans AND langu = 'L' AND otype = 'S' AND stext <> ''.
+*  lv_str = temp.
+*
+*
+*  dyfields-fieldname = 'p_plans'.
+*  dyfields-fieldvalue = temp.
+*  APPEND dyfields.
+*  CALL FUNCTION 'DYNP_UPDATE_FIELDS'
+*    EXPORTING
+*      dyname               = sy-cprog
+*      dynumb               = sy-dynnr
+*    TABLES
+*      dynpfields           = dyfields
+*    EXCEPTIONS
+*      invalid_abapworkarea = 1
+*      invalid_dynprofield  = 2
+*      invalid_dynproname   = 3
+*      invalid_dynpronummer = 4
+*      invalid_request      = 5
+*      no_fielddescription  = 6
+*      undefind_error       = 7.
+*
+*  IF sy-subrc <> 0.
+*    BREAK-POINT.
+*  ENDIF.
+
+********************************************************************** regex
+*DATA: gt_result TYPE MATCH_RESULT_TAB,
+*      match_result TYPE MATCH_RESULT_TAB,
+*      gs_result LIKE LINE OF gt_result.
+*
+*DATA: gv_string TYPE string VALUE 'Dość długie testowe zdanie m@łpa'.
+*DATA: gv_iterator TYPE i.
+*
+*FIND ALL OCCURRENCES OF REGEX '([m]+.*[a]+)' IN gv_string RESULTS gt_result.
+*
+*WRITE: / gv_string.
+*ULINE.
+*DO strlen( gv_string ) - 1 TIMES.
+*  gv_iterator = sy-index - 1.
+*  WRITE: sy-index, gv_string+gv_iterator(1).
+*  IF gv_string+gv_iterator(1) EQ ' '.
+*    NEW-LINE.
+*  ENDIF.
+*ENDDO.
+*ULINE.
+*LOOP AT gt_result INTO gs_result.
+*  WRITE: / gs_result-line, gs_result-offset, gs_result-length.
+*  WRITE: / gv_string+gs_result-offset(gs_result-length).
+*ENDLOOP.
+********************************************************************** UDANA próba wyświetlenia gif'a
+*CALL SCREEN 4200.
+*&---------------------------------------------------------------------*
+*&      Module  EXPLOSION  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE explosion OUTPUT.
+  DATA: picture_container TYPE REF TO cl_gui_custom_container,
+        html_control TYPE REF TO cl_gui_html_viewer,
+        picture TYPE REF TO cl_gui_picture,
+
+        uris TYPE TABLE OF bapiuri WITH HEADER LINE,
+        url TYPE bds_uri.
+
+  DATA: pc_cont TYPE REF TO cl_gui_custom_container.
+
+  CALL FUNCTION 'BDS_BUSINESSDOCUMENT_GET_URL'
+    EXPORTING
+      classname  = 'PICTURES'
+      classtype  = 'OT'
+      client     = sy-mandt
+      object_key = 'Z_GIF'
+*     OBJECT_KEY = 'ENJOYSAP_LOGO'
+    TABLES
+      uris       = uris.
+  IF sy-subrc <> 0.
+    MESSAGE 'URL fail' TYPE 'E' DISPLAY LIKE 'A'.
+  ELSE.
+    url = uris-uri.
+  ENDIF.
+
+  IF picture_container IS NOT BOUND.
+    CREATE OBJECT picture_container
+      EXPORTING
+        container_name = 'SUBAREA'.
+    IF sy-subrc <> 0.
+      MESSAGE 'Container fail' TYPE 'E' DISPLAY LIKE 'A'.
+    ENDIF.
+  ENDIF.
+
+**********************************************************************
+  IF picture IS NOT BOUND.
+    CREATE OBJECT picture
+    EXPORTING
+*      lifetime =
+*      shellstyle =
+      parent = picture_container
+*      name   =
+*    EXCEPTIONS
+*      error  = 1
+*      others = 2
+      .
+    IF sy-subrc <> 0.
+      MESSAGE 'Picture fail' TYPE 'E' DISPLAY LIKE 'A'.
+    ENDIF.
+  ENDIF.
+  picture->load_picture_from_url_async( url ).
+*  picture->set_display_mode( display_mode = picture->display_mode_fit_center ).
+*  picture->set_3d_border( border = 5 ).
+*
+*  cl_gui_cfw=>update_view( ).
+*  IF sy-subrc <> 0.
+*    MESSAGE 'Display fail' TYPE 'E' DISPLAY LIKE 'A'.
+*  ENDIF.
+**********************************************************************
+*CREATE OBJECT html_control
+*  EXPORTING
+*    parent = picture_container.
+*
+*CALL METHOD html_control->show_url
+*  EXPORTING
+*    url = url.
+ENDMODULE.                 " EXPLOSION  OUTPUT
