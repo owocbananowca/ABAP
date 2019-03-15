@@ -7,6 +7,10 @@
 REPORT zszk_abap_100.
 
 **********************************************************************
+*  IF p_text+gv_index(1) = ` `. "When comparing a char blanks are deleted. Compare to string -> ` insted of '
+*    WRITE 'space = (` `)'. 
+*  ENDIF.
+**********************************************************************
 data:
     desc_table    type ref to cl_abap_tabledescr,
     desc_struc    type ref to cl_abap_structdescr.
