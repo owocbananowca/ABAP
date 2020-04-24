@@ -3,6 +3,9 @@
 * I'm going to update the form with every new case I'll encounter.
 * Paweł Banach
 * Created: 24.10.2018
+* Welp, I encountered new version that works totally different.
+* Code below is 100% usless in that scenario.
+* Edit: 24.04.2020
 
 form spell_amount_process changing p_word.
   replace 'TIJSJATSCHI' with 'TYSIĄCE' into p_word.
